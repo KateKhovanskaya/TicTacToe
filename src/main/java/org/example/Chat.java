@@ -6,12 +6,16 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.io.IOException;
+import java.text.Format;
+import java.util.Date;
 
 public class Chat extends JFrame {
     private static final int WINDOW_POSX = 100;
     private static final int WINDOW_POSY = 100;
     private static final int WINDOW_WIDTH = 500;
     private static final int WINDOW_HEIGHT = 500;
+    private FileHandler fileHandler= new FileHandler();
     JLabel lbLogin;
     JTextField loginField;
     JLabel lbPassword;
@@ -24,7 +28,7 @@ public class Chat extends JFrame {
         setLocation(WINDOW_POSX, WINDOW_POSY);
         setSize(WINDOW_WIDTH, WINDOW_HEIGHT);
         setTitle("Chat");
-        setResizable(false);
+        setResizable(true);
         JPanel serverPanel = new JPanel(new GridLayout(4,1));
         lbLogin = new JLabel("Login");
         serverPanel.add(lbLogin);
@@ -40,7 +44,6 @@ public class Chat extends JFrame {
         JLabel lbChatArea = new JLabel("Chat");
         clientPanel.add(lbChatArea);
         messagesArea = new JTextArea();
-        messagesArea.setRows(10);
         clientPanel.add(messagesArea);
         JLabel lbNewMessage = new JLabel("Your message:");
         clientPanel.add(lbNewMessage);
@@ -52,8 +55,7 @@ public class Chat extends JFrame {
         sendMessageButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                messagesArea.append(loginField.getText() + ": " + messageField.getText() + "\n");
-                messageField.setText("");
+                sendMessage();
             }
         });
         messageField.addKeyListener(new KeyListener() {
@@ -64,7 +66,9 @@ public class Chat extends JFrame {
 
             @Override
             public void keyPressed(KeyEvent e) {
-
+                if(e.getKeyCode() == KeyEvent.VK_ENTER){
+                    sendMessage();
+                }
             }
 
             @Override
@@ -72,6 +76,28 @@ public class Chat extends JFrame {
 
             }
         });
+        try{
+            for (String mess:fileHandler.load("chatLog.txt")) {
+                messagesArea.append(prepareLoadingMessageForChat(mess));
+            }
+        }catch(IOException e){}
+
         setVisible(true);
+    }
+
+    private void sendMessage(){
+        String sendingMessage = loginField.getText() + ": " + messageField.getText() + "\n";
+        messagesArea.append(sendingMessage);
+        String logMessage = String.format("Date/time: %s, User: %s, message: %s\n", new Date(), loginField.getText(), messageField.getText());
+        messageField.setText("");
+        System.out.printf(logMessage);
+        fileHandler.save(logMessage, "chatLog.txt");
+    }
+
+    private String prepareLoadingMessageForChat(String loadingLine){
+        int userStart = loadingLine.indexOf("User: ");
+        int messageIndex = loadingLine.indexOf(", message: ");
+        String rezult = loadingLine.substring(userStart+6, messageIndex) + loadingLine.substring(messageIndex+9)+"\n";
+        return rezult;
     }
 }
